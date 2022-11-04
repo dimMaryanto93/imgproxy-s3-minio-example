@@ -1,0 +1,40 @@
+version: '3.9'
+services:
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    ports:
+      - "9090:8080"
+    environment:
+      - AWS_ACCESS_KEY_ID=${ACCESS_KEY:-aws-access-key}
+      - AWS_SECRET_ACCESS_KEY=${ACCESS_SECRET:-aws-access-secret}
+      - IMGPROXY_ALLOWED_SOURCES=*
+      - IMGPROXY_DEVELOPMENT_ERRORS_MODE=true
+      - IMGPROXY_KEY=${IMGPROXY_KEY}
+      - IMGPROXY_S3_ENDPOINT=http://minio:9000
+      - IMGPROXY_S3_REGION=${REGION:-us-east-1}
+      - IMGPROXY_SALT=${IMGPROXY_SALT}
+      - IMGPROXY_USE_S3=true
+      - IMGPROXY_MAX_SRC_RESOLUTION=18277308
+    links:
+      - minio
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_DEFAULT_BUCKET=${DEFAULT_BUCKET:-sample}
+      - MINIO_ROOT_PASSWORD=${ACCESS_SECRET:-aws-access-secret}
+      - MINIO_ROOT_USER=${ACCESS_KEY:-aws-access-key}
+      - MINIO_SITE_REGION=${REGION:-us-east-1}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    volumes:
+      - data:/data
+
+volumes:
+  data:
